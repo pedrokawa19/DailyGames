@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f8fafc">
+  <title>Daily Games Leaderboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+  <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+    <header class="mb-8">
+      <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-green-800">Friendly competition</p>
+      <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Daily Games Leaderboard</h1>
+      <p class="mt-3 text-sm leading-6 text-slate-500 sm:text-base">Play daily games, share the results, and see how you rank.</p>
+    </header>
+
+    <div id="main-tabs" role="tablist" aria-label="Pages" class="mb-6 flex gap-2 border-b border-slate-200">
+      <button id="home-tab" type="button" role="tab" aria-selected="true" aria-controls="home-panel" class="border-b-2 border-green-800 px-4 py-3 text-sm font-semibold text-green-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Home</button>
+      <button id="leaderboard-tab" type="button" role="tab" aria-selected="false" aria-controls="leaderboard-panel" tabindex="-1" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Leaderboard</button>
+    </div>
+
+    <section id="home-panel" role="tabpanel" aria-labelledby="home-tab" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div class="mb-6">
+        <h2 id="submit-heading" class="text-lg font-semibold">Add your score</h2>
+        <p class="mt-1 text-sm text-slate-500">Paste the result you copied from your game.</p>
+      </div>
+
+      <form id="score-form" class="space-y-5">
+        <div>
+          <label for="player-name" class="mb-2 block text-sm font-medium text-slate-700">First Name</label>
+          <input id="player-name" name="player-name" type="text" autocomplete="given-name" required placeholder="Enter your first name" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-200">
+        </div>
+        <div>
+          <label for="played-on" class="mb-2 block text-sm font-medium text-slate-700">Date played</label>
+          <input id="played-on" name="played-on" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-200">
+        </div>
+        <div>
+          <label for="game-result" class="mb-2 block text-sm font-medium text-slate-700">Game result</label>
+          <textarea id="game-result" name="game-result" rows="5" required placeholder="Paste your game result here..." class="w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-200"></textarea>
+          <p class="mt-2 text-xs text-slate-500">Supports Krillion, TimeGuessr, and Eraly.</p>
+        </div>
+        <button id="submit-button" type="submit" class="w-full rounded-lg bg-green-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">Submit Score</button>
+        <p id="form-message" role="status" aria-live="polite" class="text-sm"></p>
+      </form>
+    </section>
+
+    <section id="leaderboard-panel" role="tabpanel" aria-labelledby="leaderboard-tab" tabindex="0" hidden class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div id="game-tabs" role="tablist" aria-label="Filter scores by game" class="flex gap-2 overflow-x-auto border-b border-slate-100 px-6 sm:px-8">
+        <button id="game-all" type="button" role="tab" aria-selected="true" aria-controls="game-scores" data-game="" class="whitespace-nowrap border-b-2 border-green-800 px-3 py-4 text-sm font-semibold text-green-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">All</button>
+        <button id="game-krillion" type="button" role="tab" aria-selected="false" aria-controls="game-scores" data-game="Krillion" tabindex="-1" class="whitespace-nowrap border-b-2 border-transparent px-3 py-4 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Krillion</button>
+        <button id="game-timeguessr" type="button" role="tab" aria-selected="false" aria-controls="game-scores" data-game="TimeGuessr" tabindex="-1" class="whitespace-nowrap border-b-2 border-transparent px-3 py-4 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">TimeGuessr</button>
+        <button id="game-eraly" type="button" role="tab" aria-selected="false" aria-controls="game-scores" data-game="Eraly" tabindex="-1" class="whitespace-nowrap border-b-2 border-transparent px-3 py-4 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Eraly</button>
+      </div>
+      <div id="game-scores" role="tabpanel" aria-labelledby="game-all" tabindex="0">
+        <p id="leaderboard-message" role="status" aria-live="polite" class="px-6 py-5 text-sm text-slate-500 sm:px-8">Loading scores...</p>
+        <button id="empty-score-action" type="button" hidden class="mx-6 mb-5 text-sm font-semibold text-green-800 underline hover:text-green-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 sm:mx-8">Be the first to submit a score</button>
+        <div id="leaderboard-table-container" role="region" aria-label="Scores table" tabindex="0" class="hidden max-h-[60vh] overflow-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
+              <tr>
+                <th scope="col" class="px-6 py-3 font-semibold sm:pl-8">Rank</th>
+                <th scope="col" class="px-6 py-3 font-semibold">Player</th>
+                <th scope="col" class="px-6 py-3 font-semibold">Game</th>
+                <th scope="col" class="px-6 py-3 font-semibold">Date played</th>
+                <th scope="col" class="px-6 py-3 text-right font-semibold sm:pr-8">Score</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function setupTabs(tablist, onSelect) {
+      const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+      function selectTab(selectedTab) {
+        for (const tab of tabs) {
+          const selected = tab === selectedTab;
+          tab.setAttribute("aria-selected", String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          tab.classList.toggle("border-green-800", selected);
+          tab.classList.toggle("text-green-800", selected);
+          tab.classList.toggle("border-transparent", !selected);
+          tab.classList.toggle("text-slate-500", !selected);
+        }
+        onSelect(selectedTab, tabs);
+      }
+
+      for (const tab of tabs) {
+        tab.addEventListener("click", () => selectTab(tab));
+        tab.addEventListener("keydown", (event) => {
+          let index = tabs.indexOf(tab);
+          if (event.key === "ArrowRight") index = (index + 1) % tabs.length;
+          else if (event.key === "ArrowLeft") index = (index - 1 + tabs.length) % tabs.length;
+          else if (event.key === "Home") index = 0;
+          else if (event.key === "End") index = tabs.length - 1;
+          else return;
+          event.preventDefault();
+          tabs[index].focus();
+          selectTab(tabs[index]);
+        });
+      }
+    }
+
+    setupTabs(document.getElementById("main-tabs"), (selectedTab, tabs) => {
+      for (const tab of tabs) {
+        document.getElementById(tab.getAttribute("aria-controls")).hidden = tab !== selectedTab;
+      }
+    });
+
+    const form = document.getElementById("score-form");
+    const submitButton = document.getElementById("submit-button");
+    const formMessage = document.getElementById("form-message");
+    const leaderboardMessage = document.getElementById("leaderboard-message");
+    const emptyScoreAction = document.getElementById("empty-score-action");
+    const tableContainer = document.getElementById("leaderboard-table-container");
+    const leaderboardBody = document.getElementById("leaderboard-body");
+    const playerInput = document.getElementById("player-name");
+    const dateInput = document.getElementById("played-on");
+    const resultInput = document.getElementById("game-result");
+    let scores = null;
+    let selectedGame = "";
+
+    const today = new Date();
+    dateInput.value = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0")
+    ].join("-");
+
+    try {
+      playerInput.value = localStorage.getItem("playerName") || "";
+    } catch (error) {
+      setFormMessage("Could not access the saved player name: " + error.message, true);
+    }
+
+    emptyScoreAction.addEventListener("click", () => {
+      document.getElementById("home-tab").click();
+      playerInput.focus();
+    });
+
+    setupTabs(document.getElementById("game-tabs"), (tab) => {
+      selectedGame = tab.dataset.game;
+      document.getElementById("game-scores").setAttribute("aria-labelledby", tab.id);
+      if (scores !== null) renderLeaderboard();
+    });
+
+    function normalizeName(name) {
+      return name.replace(/\s+/g, "").toLowerCase()
+        .replace(/(^|[^\p{L}\p{M}\p{N}])\p{L}/gu, (match) => match.toUpperCase());
+    }
+
+    playerInput.addEventListener("blur", () => {
+      playerInput.value = normalizeName(playerInput.value);
+    });
+
+    function setFormMessage(message, isError = false) {
+      formMessage.textContent = message;
+      formMessage.className = isError ? "text-sm text-red-700" : "text-sm text-emerald-700";
+    }
+
+    function parseResult(text) {
+      const normalized = text.replace(/\r\n?/g, "\n");
+      const games = [
+        { name: "Krillion", pattern: /Krillion\s#\d+\s.*\n(\d+)/ },
+        { name: "TimeGuessr", pattern: /TimeGuessr\s#\d+\s—\s([\d,]+)/ },
+        { name: "Eraly", pattern: /Eraly\s#\d+.*\n.*?\s(\d+)/ }
+      ];
+
+      for (const game of games) {
+        const match = normalized.match(game.pattern);
+        if (match) {
+          const score = Number(match[1].replace(/,/g, ""));
+          if (Number.isSafeInteger(score) && score <= 2147483647) {
+            return { game_name: game.name, score };
+          }
+          throw new Error("The score is too large to save.");
+        }
+      }
+      throw new Error("Could not recognize that result. Check the copied text and try again.");
+    }
+
+    function renderLeaderboard() {
+      const visibleScores = scores.filter((entry) => !selectedGame || entry.game_name === selectedGame);
+      leaderboardBody.replaceChildren();
+      for (const [index, entry] of visibleScores.entries()) {
+        const row = document.createElement("tr");
+        const rank = document.createElement("td");
+        const player = document.createElement("td");
+        const game = document.createElement("td");
+        const date = document.createElement("td");
+        const score = document.createElement("td");
+        rank.className = "whitespace-nowrap px-6 py-4 font-semibold text-slate-500 sm:pl-8";
+        player.className = "whitespace-nowrap px-6 py-4 font-medium text-slate-900";
+        game.className = "whitespace-nowrap px-6 py-4 text-slate-500";
+        date.className = "whitespace-nowrap px-6 py-4 text-slate-500";
+        score.className = "whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-900 sm:pr-8";
+        rank.textContent = "#" + (index + 1);
+        player.textContent = entry.player_name;
+        game.textContent = entry.game_name;
+        date.textContent = entry.game_date || "Not recorded";
+        score.textContent = Number(entry.score).toLocaleString();
+        row.append(rank, player, game, date, score);
+        leaderboardBody.append(row);
+      }
+      tableContainer.classList.toggle("hidden", visibleScores.length === 0);
+      leaderboardMessage.hidden = visibleScores.length > 0;
+      emptyScoreAction.hidden = visibleScores.length > 0;
+      leaderboardMessage.textContent = visibleScores.length === 0 ? "No scores yet for this selection." : "";
+      leaderboardMessage.className = "px-6 py-5 text-sm text-slate-500 sm:px-8";
+    }
+
+    async function loadLeaderboard() {
+      const { data, error } = await supabaseClient
+        .from("scores")
+        .select("player_name, game_name, score, game_date")
+        .order("score", { ascending: false });
+
+      if (error) {
+        scores = null;
+        tableContainer.classList.add("hidden");
+        emptyScoreAction.hidden = true;
+        leaderboardMessage.textContent = "Could not load scores: " + error.message;
+        leaderboardMessage.className = "px-6 py-5 text-sm text-red-700 sm:px-8";
+        leaderboardMessage.hidden = false;
+        return false;
+      }
+
+      scores = data;
+      renderLeaderboard();
+      return true;
+    }
+
+    let supabaseClient;
+    if (!window.supabase) {
+      submitButton.disabled = true;
+      setFormMessage("The database client could not load. Check your connection and refresh the page.", true);
+      leaderboardMessage.textContent = "Could not load the leaderboard.";
+      leaderboardMessage.className = "px-6 py-5 text-sm text-red-700 sm:px-8";
+    } else {
+      supabaseClient = window.supabase.createClient(
+        "https://sojojhuwdimcsompxabi.supabase.co",
+        "sb_publishable_JyIU85uNaEPk4Ld9CQZZGw_jGam26_p"
+      );
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        playerInput.value = normalizeName(playerInput.value);
+        if (!playerInput.value) {
+          setFormMessage("Please enter your first name.", true);
+          playerInput.focus();
+          return;
+        }
+        let result;
+        try {
+          result = parseResult(resultInput.value);
+        } catch (error) {
+          setFormMessage(error.message, true);
+          return;
+        }
+
+        const playerName = playerInput.value;
+        const originalText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = "Submitting...";
+        setFormMessage("Submitting score...");
+        try {
+          const { error } = await supabaseClient.from("scores").insert({
+            player_name: playerName,
+            game_date: dateInput.value,
+            ...result
+          });
+          if (error) {
+            setFormMessage("Could not submit score: " + error.message, true);
+            return;
+          }
+
+          resultInput.value = "";
+          let saveError = "";
+          try {
+            localStorage.setItem("playerName", playerName);
+          } catch (error) {
+            saveError = " Your name could not be saved on this device: " + error.message;
+          }
+          setFormMessage("Score submitted!" + saveError, Boolean(saveError));
+          if (!(await loadLeaderboard())) {
+            setFormMessage("Score submitted, but the leaderboard could not be refreshed." + saveError, true);
+          }
+        } catch (error) {
+          setFormMessage("An unexpected error occurred: " + error.message, true);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+      });
+
+      loadLeaderboard().catch((error) => {
+        leaderboardMessage.textContent = "Could not load scores: " + error.message;
+        leaderboardMessage.className = "px-6 py-5 text-sm text-red-700 sm:px-8";
+      });
+    }
+  </script>
+</body>
+</html>

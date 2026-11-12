@@ -48,23 +48,22 @@
 
     <section id="leaderboard-panel" role="tabpanel" aria-labelledby="leaderboard-tab" tabindex="0" hidden class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div id="game-tabs" role="tablist" aria-label="Filter scores by game" class="flex gap-2 overflow-x-auto border-b border-slate-100 px-6 sm:px-8">
-        <button id="game-all" type="button" role="tab" aria-selected="true" aria-controls="game-scores" data-game="" class="whitespace-nowrap border-b-2 border-green-800 px-3 py-4 text-sm font-semibold text-green-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">All</button>
-        <button id="game-krillion" type="button" role="tab" aria-selected="false" aria-controls="game-scores" data-game="Krillion" tabindex="-1" class="whitespace-nowrap border-b-2 border-transparent px-3 py-4 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Krillion</button>
+        <button id="game-krillion" type="button" role="tab" aria-selected="true" aria-controls="game-scores" data-game="Krillion" class="whitespace-nowrap border-b-2 border-green-800 px-3 py-4 text-sm font-semibold text-green-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Krillion</button>
         <button id="game-timeguessr" type="button" role="tab" aria-selected="false" aria-controls="game-scores" data-game="TimeGuessr" tabindex="-1" class="whitespace-nowrap border-b-2 border-transparent px-3 py-4 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">TimeGuessr</button>
         <button id="game-eraly" type="button" role="tab" aria-selected="false" aria-controls="game-scores" data-game="Eraly" tabindex="-1" class="whitespace-nowrap border-b-2 border-transparent px-3 py-4 text-sm font-semibold text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">Eraly</button>
       </div>
-      <div id="game-scores" role="tabpanel" aria-labelledby="game-all" tabindex="0">
+      <div id="game-scores" role="tabpanel" aria-labelledby="game-krillion" tabindex="0">
         <p id="leaderboard-message" role="status" aria-live="polite" class="px-6 py-5 text-sm text-slate-500 sm:px-8">Loading scores...</p>
         <button id="empty-score-action" type="button" hidden class="mx-6 mb-5 text-sm font-semibold text-green-800 underline hover:text-green-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 sm:mx-8">Be the first to submit a score</button>
         <div id="leaderboard-table-container" role="region" aria-label="Scores table" tabindex="0" class="hidden max-h-[60vh] overflow-auto">
           <table class="w-full text-left text-sm">
             <thead class="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
               <tr>
-                <th scope="col" class="px-6 py-3 font-semibold sm:pl-8">Rank</th>
-                <th scope="col" class="px-6 py-3 font-semibold">Player</th>
-                <th scope="col" class="px-6 py-3 font-semibold">Game</th>
-                <th scope="col" class="px-6 py-3 font-semibold">Date played</th>
-                <th scope="col" class="px-6 py-3 text-right font-semibold sm:pr-8">Score</th>
+                <th scope="col" class="px-6 py-3 font-semibold sm:pl-8"><button type="button" data-sort="rank" class="whitespace-nowrap hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-700">Rank <span aria-hidden="true"></span></button></th>
+                <th scope="col" class="px-6 py-3 font-semibold"><button type="button" data-sort="player" class="whitespace-nowrap hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-700">Player <span aria-hidden="true"></span></button></th>
+                <th scope="col" class="px-6 py-3 font-semibold"><button type="button" data-sort="date" class="whitespace-nowrap hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-700">Date played <span aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="descending" class="px-6 py-3 text-right font-semibold"><button type="button" data-sort="score" class="whitespace-nowrap hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-700">Score <span aria-hidden="true">↓</span></button></th>
+                <th scope="col" class="px-6 py-3 text-right font-semibold sm:pr-8"><button type="button" data-sort="percentage" class="whitespace-nowrap hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-700">Percentage <span aria-hidden="true"></span></button></th>
               </tr>
             </thead>
             <tbody id="leaderboard-body" class="divide-y divide-slate-100"></tbody>
@@ -123,7 +122,11 @@
     const dateInput = document.getElementById("played-on");
     const resultInput = document.getElementById("game-result");
     let scores = null;
-    let selectedGame = "";
+    let selectedGame = "Krillion";
+    let sortColumn = null;
+    let sortDirection = null;
+    const gameMaximums = { Krillion: 700, TimeGuessr: 50000, Eraly: 700 };
+    const sortButtons = Array.from(document.querySelectorAll("[data-sort]"));
 
     const today = new Date();
     dateInput.value = [
@@ -144,10 +147,43 @@
     });
 
     setupTabs(document.getElementById("game-tabs"), (tab) => {
+      if (selectedGame !== tab.dataset.game) {
+        sortColumn = null;
+        sortDirection = null;
+      }
       selectedGame = tab.dataset.game;
       document.getElementById("game-scores").setAttribute("aria-labelledby", tab.id);
+      updateSortHeaders();
       if (scores !== null) renderLeaderboard();
     });
+
+    function updateSortHeaders() {
+      for (const button of sortButtons) {
+        const active = button.dataset.sort === (sortColumn || "score");
+        const direction = sortDirection || "descending";
+        const header = button.closest("th");
+        if (active) header.setAttribute("aria-sort", direction);
+        else header.removeAttribute("aria-sort");
+        button.querySelector("span").textContent = active ? (direction === "ascending" ? "↑" : "↓") : "";
+      }
+    }
+
+    for (const button of sortButtons) {
+      button.addEventListener("click", () => {
+        const column = button.dataset.sort;
+        if (sortColumn !== column) {
+          sortColumn = column;
+          sortDirection = "ascending";
+        } else if (sortDirection === "ascending") {
+          sortDirection = "descending";
+        } else {
+          sortColumn = null;
+          sortDirection = null;
+        }
+        updateSortHeaders();
+        if (scores !== null) renderLeaderboard();
+      });
+    }
 
     function normalizeName(name) {
       return name.replace(/\s+/g, "").toLowerCase()
@@ -185,26 +221,43 @@
     }
 
     function renderLeaderboard() {
-      const visibleScores = scores.filter((entry) => !selectedGame || entry.game_name === selectedGame);
+      const visibleScores = scores
+        .filter((entry) => entry.game_name === selectedGame)
+        .map((entry, index) => ({ entry, rank: index + 1 }));
+      if (sortColumn) {
+        const direction = sortDirection === "ascending" ? 1 : -1;
+        visibleScores.sort((a, b) => {
+          if (sortColumn === "date" && (!a.entry.game_date || !b.entry.game_date)) {
+            if (!a.entry.game_date && !b.entry.game_date) return a.rank - b.rank;
+            return a.entry.game_date ? -1 : 1;
+          }
+          let comparison;
+          if (sortColumn === "rank") comparison = a.rank - b.rank;
+          else if (sortColumn === "player") comparison = a.entry.player_name.localeCompare(b.entry.player_name, undefined, { sensitivity: "base", numeric: true });
+          else if (sortColumn === "date") comparison = a.entry.game_date.localeCompare(b.entry.game_date);
+          else comparison = a.entry.score - b.entry.score;
+          return comparison * direction || a.rank - b.rank;
+        });
+      }
       leaderboardBody.replaceChildren();
-      for (const [index, entry] of visibleScores.entries()) {
+      for (const { entry, rank: scoreRank } of visibleScores) {
         const row = document.createElement("tr");
         const rank = document.createElement("td");
         const player = document.createElement("td");
-        const game = document.createElement("td");
         const date = document.createElement("td");
         const score = document.createElement("td");
+        const percentage = document.createElement("td");
         rank.className = "whitespace-nowrap px-6 py-4 font-semibold text-slate-500 sm:pl-8";
         player.className = "whitespace-nowrap px-6 py-4 font-medium text-slate-900";
-        game.className = "whitespace-nowrap px-6 py-4 text-slate-500";
         date.className = "whitespace-nowrap px-6 py-4 text-slate-500";
-        score.className = "whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-900 sm:pr-8";
-        rank.textContent = "#" + (index + 1);
+        score.className = "whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-900";
+        percentage.className = "whitespace-nowrap px-6 py-4 text-right tabular-nums text-slate-500 sm:pr-8";
+        rank.textContent = "#" + scoreRank;
         player.textContent = entry.player_name;
-        game.textContent = entry.game_name;
         date.textContent = entry.game_date || "Not recorded";
         score.textContent = Number(entry.score).toLocaleString();
-        row.append(rank, player, game, date, score);
+        percentage.textContent = ((entry.score / gameMaximums[selectedGame]) * 100).toFixed(2) + "%";
+        row.append(rank, player, date, score, percentage);
         leaderboardBody.append(row);
       }
       tableContainer.classList.toggle("hidden", visibleScores.length === 0);

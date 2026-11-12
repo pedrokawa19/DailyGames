@@ -1,9 +1,10 @@
-# DailyGames
+# Daily Games Leaderboard
 
-Open `index.html` in a browser to submit and view scores. The page uses Tailwind CSS and the Supabase JavaScript client from CDNs, so it requires an internet connection.
+A friendly leaderboard for comparing daily game scores with friends. 
 
-The date defaults to your device's local date. After a successful submission, your player name is saved in browser local storage for your next visit.
+Scores are stored in Supabase. The frontend is a single HTML page that can be hosted on Netlify.
 
-The Supabase `scores` table must allow the public client to read and insert scores through its grants and row-level security policies. The publishable key is visible in the page; use appropriate policies to restrict access and do not put a secret or service-role key in the browser.
-
-The `scores` table stores the chosen date in the `game_date` date column. The `created_at` timestamp records when the score was submitted.
+[![HTML](https://img.shields.io/badge/-HTML5-E34F26?style=flat&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Netlify](https://img.shields.io/badge/-Netlify-00C7B7?style=flat&logo=netlify&logoColor=white)](https://www.netlify.com/)
